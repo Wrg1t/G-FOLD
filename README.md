@@ -1,6 +1,9 @@
 ![demo](demo.png)
 ```
 G-FOLD
+├─ demo.png
+├─ demo_data.html
+├─ demo_traj.html
 ├─ LICENSE
 ├─ README.md
 ├─ requirements.txt
