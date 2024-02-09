@@ -15,7 +15,7 @@ G-FOLD
 
 # G-FOLD
 
-G-FOLD (Guidance for Fuel-Optimal Large Diverts) algorithm implementation in Python 3. This code first solves a minimum-landing-error guidance problem for the closest landing point and then solves a minimum-fuel guidance problem to reach the landing point.
+G-FOLD (Guidance for Fuel-Optimal Large Diverts) algorithm implementation in Python 3. This code first solves a minimum-landing-error guidance problem for a closest landing point and then solves a minimum-fuel guidance problem to reach the landing point.
 
 ## Table of Contents
 
@@ -58,6 +58,7 @@ Utilizes a [Golden-section search](https://en.wikipedia.org/wiki/Golden-section_
 ## TODO
 
 - [ ] Generate C code for a better performance.
+- [ ] Build a control module to run test in Kerbal Space Program.
 
 ## License
 
