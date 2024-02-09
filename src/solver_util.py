@@ -25,7 +25,8 @@ class RocketTrajectorySolver:
 
     def estimate_time(self, N, problem_type, rf):
         # golden section search to estimate flight time with lowest cost for trajectory calculations
-        # in p3, the cost is the landing error, in p4, the cost is the usage of fuel
+        # since experimentally, the cost is generally a unimodal function of the time of flight
+        # and in p3, the cost is the landing error, in p4, the cost is the usage of fuel
         golden_ratio = (np.sqrt(5) - 1) * 0.5
         thrust_lower = self.thrust_lower_bound
         thrust_upper = self.thrust_upper_bound
