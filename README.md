@@ -60,6 +60,7 @@ Utilizes a [Golden-section search](https://en.wikipedia.org/wiki/Golden-section_
 
 ## TODO
 
+- [ ] Implement Successive Convexification.
 - [ ] Generate C code for a better performance.
 - [ ] Build a control module to run test in Kerbal Space Program.
 
