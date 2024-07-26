@@ -45,9 +45,10 @@ And there you go! We are good to go.
 ## Usage
 
 ```
-python3 solver_util.py 
-   -f [Path to JSON file containing vessel parameters] 
-   -N [Numbers of intervals (default: 20)]
+python3 src/solver_util.py 
+   -h, --help           show this help message and exit
+   -f JSON              path to JSON file containing vessel parameters
+   -n Positive Integer  number of intervals (default: 20)
 ```
 
 There are two vessel parameters provided already, you can change some of it to see how the trajectory changes accordingly.   

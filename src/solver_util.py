@@ -3,6 +3,7 @@ import trajectory_solver as tsolver
 import plot
 import json
 import argparse
+import os
 
 class RocketTrajectorySolver:
     def __init__(self, conditions):
@@ -34,11 +35,8 @@ class RocketTrajectorySolver:
         max_fuel_burn_time = self.mass_fuel / (self.alpha * thrust_lower)
         min_dry_mass_time = self.mass_dry * np.linalg.norm(initial_speed) / thrust_upper
         time_lower_bound, time_upper_bound = min_dry_mass_time, max_fuel_burn_time
-        iteration_count = 0
         
         while not (time_upper_bound - time_lower_bound) ** 2 <= 10:
-            iteration_count += 1
-            print("[Golden Search]: Iteration Count:", iteration_count)
             time_difference = (time_upper_bound - time_lower_bound) * golden_ratio
             time_1, time_2 = time_lower_bound + time_difference, time_upper_bound - time_difference
             cost_1, cost_2 = self.calculate_cost(time_1, N, problem_type, rf), \
@@ -69,7 +67,6 @@ class RocketTrajectorySolver:
         return cost
 
     def prepare_bundle_data(self, N, final_position, flight_time):
-        
         time_interval = flight_time / N
         alpha_dt = self.alpha * time_interval
         time_array = np.linspace(0, (N - 1) * time_interval, N)
@@ -89,6 +86,7 @@ class RocketTrajectorySolver:
         return (initial_state, z0_term_inv, z0_term_log, gravity, final_position, sparse_params)
 
     def run(self, N):
+        # solving p3 firstly for minimum landing error
         landing_location = self.landing_point
         flight_time = self.estimate_time(N, 'p3', landing_location)
 
@@ -99,10 +97,10 @@ class RocketTrajectorySolver:
             print('Cannot solve problem p3.')
             return None
 
-        df = x[0:3, N - 1]
-        flight_time = self.estimate_time(N, 'p4', df)
+        closest_destination = x[0:3, N - 1]
+        flight_time = self.estimate_time(N, 'p4', closest_destination)
 
-        bundle_data = self.prepare_bundle_data(N, df, flight_time)
+        bundle_data = self.prepare_bundle_data(N, closest_destination, flight_time)
         obj_opt, x, u, m, s, z = tsolver.lcvx(N, 'p4', bundle_data)
 
         if not obj_opt:
@@ -112,54 +110,55 @@ class RocketTrajectorySolver:
         print('Time Of Flight:', flight_time)
         return flight_time, x, u, m, s, z
 
-
 def parse_arguments():
     parser = argparse.ArgumentParser(description='Rocket Trajectory Solver')
-    parser.add_argument('-f',
+    parser.add_argument('-f', 
+                        metavar='JSON',
                         type=str,
-                        help='Path to JSON file containing vessel parameters')
-    parser.add_argument('-N',
+                        help='path to JSON file containing vessel parameters')
+    parser.add_argument('-n', 
+                        metavar='Positive Integer',
                         type=int,
                         default=20,
-                        help='Number of intervals (default: 20)')
+                        help='number of intervals (default: 20)')
     args = parser.parse_args()
     
-    if args.N <= 0:
+    if not args.f:
+        parser.print_help()
+        exit(1)
+    
+    if args.n <= 0:
         parser.error("Number of intervals (N) must be a positive integer.")
     
     return args
+
 if __name__ == '__main__':
-
-    command_line_args = parse_arguments()
-    N = command_line_args.N
-
     try:
+        command_line_args = parse_arguments()
+        N = command_line_args.n
+        
+        if not os.path.isfile(command_line_args.f):
+            raise FileNotFoundError(f"JSON file not found. Please provide a valid file path.")
+        
         with open(command_line_args.f, 'r') as file:
-            vessel_data = json.load(file)
-    except FileNotFoundError:
-        print("Error: JSON file not found. Please provide a valid file path.")
-        exit(1)
-    except json.JSONDecodeError:
-        print("Error: Invalid JSON format. Please ensure the file contains valid JSON data.")
-        exit(1)
-    except Exception as e:
-        print("Error: ", e)
-
-    # parameters processing for the correct type
-    try:
+                vessel_data = json.load(file)
+                
         vessel_data['landing_point'] = np.array(vessel_data['landing_point'])
         vessel_data['initial_state'] = np.array(vessel_data['initial_state'])
         vessel_data['g'] = np.array(vessel_data['g'])
         vessel_data['angle_gs'] = np.radians(vessel_data['angle_gs'])
         vessel_data['angle_pt'] = np.radians(vessel_data['angle_pt'])
-    except KeyError as e:
-        print(f"Error: Missing key '{e.args[0]}' in the JSON data.")
-        exit(1)
+        
+        gfold = RocketTrajectorySolver(vessel_data)
+        time_of_flight, x, u, m, s, z = gfold.run(N)
+        plot.run(time_of_flight, x, u, m, s, z, vessel_data)
+        
+    except json.JSONDecodeError:
+        raise json.JSONDecodeError("Invalid JSON format. Please ensure the file contains valid JSON data.")
     except ValueError:
-        print("Error: Invalid value format in the JSON data.")
-        exit(1)
-
-    gfold = RocketTrajectorySolver(vessel_data)
-    time_of_flight, x, u, m, s, z = gfold.run(N)
-    plot.run(time_of_flight, x, u, m, s, z, vessel_data)
+        raise ValueError("Invalid value format in the JSON data.")
+    except KeyError as e:
+        raise Exception(f"Missing key '{e.args[0]}' in the JSON data.")
+    except Exception as e:
+        print("Error: ", e)
     
