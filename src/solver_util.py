@@ -62,7 +62,7 @@ class RocketTrajectorySolver:
         if problem_type == 'p3':
             cost = np.linalg.norm(x[0:3, N - 1] - origin)
         elif problem_type == 'p4':
-            cost = -z[0, N - 1]  # maximizing the the final mass, which is minimizing negative z(t).
+            cost = -z[0, N - 1]  # minimizing negative z(t), which is equivalent to maximizing the the final mass.
 
         return cost
 
@@ -96,7 +96,8 @@ class RocketTrajectorySolver:
         if not obj_opt:
             print('Cannot solve problem p3.')
             return None
-
+        
+        # then solve p4 for minimum fuel consumption
         closest_destination = x[0:3, N - 1]
         flight_time = self.estimate_time(N, 'p4', closest_destination)
 
@@ -141,7 +142,7 @@ if __name__ == '__main__':
             raise FileNotFoundError(f"JSON file not found. Please provide a valid file path.")
         
         with open(command_line_args.f, 'r') as file:
-                vessel_data = json.load(file)
+            vessel_data = json.load(file)
                 
         vessel_data['landing_point'] = np.array(vessel_data['landing_point'])
         vessel_data['initial_state'] = np.array(vessel_data['initial_state'])
