@@ -1,6 +1,7 @@
 import numpy as np
 from cvxpy import *
 
+
 def lcvx(N, pmark, packed_data):
     if pmark == 'p3':
         program = 3

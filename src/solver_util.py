@@ -5,6 +5,7 @@ import json
 import argparse
 import os
 
+
 class RocketTrajectorySolver:
     def __init__(self, conditions):
         self.gravity_constant = 9.80665
