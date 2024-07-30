@@ -9,8 +9,8 @@ G-FOLD
 ├─ requirements.txt
 ├─ src
 │  ├─ plot.py
-│  ├─ solver_util.py
-│  └─ trajectory_solver.py
+│  ├─ gfold_util.py
+│  └─ lcvx_optimizer.py
 ├─ vessel_parameters_earth.json
 └─ vessel_parameters_mars.json
 
@@ -45,7 +45,7 @@ And there you go! We are good to go.
 ## Usage
 
 ```
-python3 src/solver_util.py 
+python3 src/gfold_util.py 
    -h, --help           show this help message and exit
    -f JSON              path to JSON file containing vessel parameters
    -n Positive Integer  number of intervals (default: 20)
