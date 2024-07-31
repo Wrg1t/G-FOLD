@@ -1,6 +1,7 @@
 __pycache__
 .git
 .idea
+.vscode
 venv
 env
 References

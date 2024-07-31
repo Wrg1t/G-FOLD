@@ -1,5 +1,5 @@
 import numpy as np
-import trajectory_solver as tsolver
+from lcvx_optimizer import LcvxOptimizer
 import plot
 import json
 import argparse
@@ -54,7 +54,8 @@ class RocketTrajectorySolver:
         origin = rf
 
         bundle_data = self.prepare_bundle_data(N, origin, time)
-        obj_opt, x, u, m, s, z = tsolver.lcvx(N, problem_type, bundle_data)
+        lcvx = LcvxOptimizer(N, problem_type, bundle_data)
+        obj_opt, x, u, m, s, z = lcvx.solve()
 
         if not obj_opt:
             print(f'Cannot solve problem {problem_type}.')
@@ -92,7 +93,8 @@ class RocketTrajectorySolver:
         flight_time = self.estimate_time(N, 'p3', landing_location)
 
         bundle_data = self.prepare_bundle_data(N, landing_location, flight_time)
-        obj_opt, x, u, m, s, z = tsolver.lcvx(N, 'p3', bundle_data)
+        p3 = LcvxOptimizer(N, 'p3', bundle_data)
+        obj_opt, x, u, m, s, z = p3.solve()
 
         if not obj_opt:
             print('Cannot solve problem p3.')
@@ -103,7 +105,8 @@ class RocketTrajectorySolver:
         flight_time = self.estimate_time(N, 'p4', closest_destination)
 
         bundle_data = self.prepare_bundle_data(N, closest_destination, flight_time)
-        obj_opt, x, u, m, s, z = tsolver.lcvx(N, 'p4', bundle_data)
+        p4 = LcvxOptimizer(N, 'p4', bundle_data)
+        obj_opt, x, u, m, s, z = p4.solve()
 
         if not obj_opt:
             print('Cannot solve problem p4.')
@@ -111,6 +114,7 @@ class RocketTrajectorySolver:
 
         print('Time Of Flight:', flight_time)
         return flight_time, x, u, m, s, z
+
 
 def parse_arguments():
     parser = argparse.ArgumentParser(description='Rocket Trajectory Solver')
