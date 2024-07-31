@@ -1,6 +1,5 @@
 import numpy as np
 import cvxpy as cp
-from cvxpygen import cpg
 
 
 class LcvxOptimizer:
