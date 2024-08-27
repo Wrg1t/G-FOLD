@@ -1,0 +1,6 @@
+.DS_Store
+NOTES.md
+env
+__pycache__
+*.sublime*
+test.py
