@@ -31,7 +31,7 @@ class RocketLanding:
         self.min_d = cp.Parameter(value=0, name='min_d')
 
     def _initialize_variables(self):
-        # state vector (3position, 3velocity)
+        # state vector (three position, three velocity)
         self.x = cp.Variable((6, self.N), name='var_x')
         # u = Tc/mass because Tc[:,n]/m[n] is not allowed by DCP
         self.u = cp.Variable((3, self.N), name='var_u')
@@ -61,8 +61,10 @@ class RocketLanding:
         for n in range(0, self.N-1):
             self.con += [self.x[3:6, n+1] == self.x[3:6, n] + (self.dt * 0.5) * ((self.u[:, n] + self.var_g[:, 0]) + (self.u[:, n+1] + self.var_g[:, 0]))]
             self.con += [self.x[0:3, n+1] == self.x[0:3, n] + (self.dt * 0.5) * (self.x[3:6, n+1] + self.x[3:6, n])]  # leapfrog integration
+            
             self.con += [cp.norm((self.x[0:3, n] - self.x[0:3, self.N-1])[1:3]) - self.y_gs_cot * (self.x[0, n] - self.x[0, self.N-1]) <= 0]  # glideslope cone
             self.con += [cp.norm(self.x[3:6, n]) <= self.V_max]  # velocity
+            
             self.con += [self.z[0, n+1] == self.z[0, n] - (self.alpha_dt * 0.5) * (self.s[0, n] + self.s[0, n+1])]  # mass decreases
             self.con += [cp.norm(self.u[:, n]) <= self.s[0, n]]  # limit thrust
             self.con += [self.u[0, n] >= self.p_cs_cos * self.s[0, n]]  # thrust pointing constraint
@@ -72,7 +74,7 @@ class RocketLanding:
                 self.con += [self.lambda_1[0, n] == self.z0_term_inv[0, n] * (1 - (self.z[0, n] - self.z0[0, n]))]
                 self.con += [self.lambda_2[0, n] == self.z0_term_inv[0, n] * (1 - (self.z[0, n] - self.z0[0, n]))]
 
-                # taylor expansion as a great approximation to keep the convexity
+                # taylor series as a great approximation to keep the convexity
                 self.con += [self.s[0, n] >= self.r1 * self.lambda_1[0, n] + (self.z[0, n] - self.z0[0, n]) ** 2 * 0.5]  # thrust lower bound
                 self.con += [self.s[0, n] <= self.r2 * self.lambda_2[0, n]]  # thrust upper bound
 
