@@ -1,7 +1,7 @@
 import cvxpy as cp
 import numpy as np
 from cvxpygen import cpg
-from Parameters import rocket_landing_parameters as p
+from parameters import rocket_landing_parameters as p
 from src import lcvx_problem_definition
 from src import plot
 

@@ -1,6 +1,6 @@
 .DS_Store
 NOTES.md
-env
+.venv
+*_cpg
 __pycache__
 *.sublime*
-test.py
