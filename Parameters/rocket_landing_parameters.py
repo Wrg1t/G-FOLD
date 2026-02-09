@@ -9,9 +9,9 @@ class Parameters:
             
         self.N = N
 
-        self.vessel_data['landing_point'] = np.array(self.vessel_data['landing_point']).reshape(-1, 3)
-        self.vessel_data['initial_state'] = np.array(self.vessel_data['initial_state']).reshape(-1, 6)
-        self.vessel_data['g'] = np.array(self.vessel_data['g']).reshape(-1, 3)
+        self.vessel_data['landing_point'] = np.array(self.vessel_data['landing_point'])
+        self.vessel_data['initial_state'] = np.array(self.vessel_data['initial_state'])
+        self.vessel_data['g'] = np.array(self.vessel_data['g'])
         self.vessel_data['angle_gs'] = np.radians(self.vessel_data['angle_gs'])
         self.vessel_data['angle_pt'] = np.radians(self.vessel_data['angle_pt'])
 
@@ -39,7 +39,7 @@ class Parameters:
         self.landing_point = self.vessel_data['landing_point']
 
         self.time_upper_bound = self.mass_fuel / (self.alpha * self.thrust_lower_bound)
-        self.time_lower_bound = self.mass_dry * np.linalg.norm(self.initial_state[0][3:]) / self.thrust_upper_bound
+        self.time_lower_bound = self.mass_dry * np.linalg.norm(self.initial_state[3:]) / self.thrust_upper_bound
 
     def get_data(self, tf):
         dt = tf / self.N
@@ -49,9 +49,9 @@ class Parameters:
         time_array = np.linspace(0, (self.N - 1) * dt, self.N)
 
         z0_term = self.mass_wet - self.alpha * self.thrust_upper_bound * time_array
-            
-        z0_term_inv = (1 / z0_term).reshape(1, self.N)
-        z0_term_log = np.log(z0_term).reshape(1, self.N)
+                        
+        z0_term_inv = (1 / z0_term)
+        z0_term_log = np.log(z0_term)
     
         initial_state = self.initial_state.reshape(6, 1)
         gravity = self.gravity_vector.reshape(3, 1)

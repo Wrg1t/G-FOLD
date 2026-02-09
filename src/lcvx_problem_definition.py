@@ -35,28 +35,27 @@ class RocketLanding:
         self.x = cp.Variable((6, self.N), name='var_x')
         # u = Tc/mass because Tc[:,n]/m[n] is not allowed by DCP
         self.u = cp.Variable((3, self.N), name='var_u')
-        self.z = cp.Variable((1, self.N), name='var_z')  # z = ln(mass)
-        self.s = cp.Variable((1, self.N), name='var_s')  # thrust slack
+        self.z = cp.Variable(self.N, name='var_z')  # z = ln(mass)
+        self.s = cp.Variable(self.N, name='var_s')  # thrust slack
 
     def _define_constraints(self):
         self.con = []
-        self.con += [self.x[0:3, 0] == self.x0[0:3, 0]]  # initial position
-        self.con += [self.x[3:6, 0] == self.x0[3:6, 0]]  # initial velocity
+        self.con += [self.x[:, 0] == self.x0[:, 0]]  # initial state (position and velocity)
         self.con += [self.x[3:6, self.N-1] == np.array([0, 0, 0])]  # safe and sound on the ground.
-        self.con += [self.s[0, self.N-1] == 0]  # shut the engine at last
-        self.con += [self.u[:, 0] == self.s[0, 0] * np.array([1, 0, 0])]  # thrust direction starts upwards
-        self.con += [self.u[:, self.N-1] == self.s[0, self.N-1] * np.array([1, 0, 0])]  # and ends upwards
-        self.con += [self.z[0, 0] == self.m_wet_log]  # convexified (7)
-        self.con += [self.z[0, self.N-1] >= self.m_dry_log]
+        self.con += [self.s[self.N-1] == 0]  # shut the engine at last
+        self.con += [self.u[:, 0] == self.s[0] * np.array([1, 0, 0])]  # thrust direction starts upwards
+        self.con += [self.u[:, self.N-1] == self.s[self.N-1] * np.array([1, 0, 0])]  # and ends upwards
+        self.con += [self.z[0] == self.m_wet_log]  # convexified (7)
+        self.con += [self.z[self.N-1] >= self.m_dry_log]
         self.con += [self.x[0, self.N-1] == self.rf[0]]
 
         # a workaround allowing it to be DPP-compliant
         self.var_g = cp.Variable(np.shape(self.g), 'var_g')
         self.con += [self.var_g == self.g]
 
-        self.lambda_1 = cp.Variable((1, self.N), name='var_l1')
-        self.lambda_2 = cp.Variable((1, self.N), name='var_l2')
-        self.z0 = cp.Variable((1, self.N), name='z0')
+        self.lambda_1 = cp.Variable(self.N, name='var_l1')
+        self.lambda_2 = cp.Variable(self.N, name='var_l2')
+        self.z0 = cp.Variable(self.N, name='z0')
 
         for n in range(0, self.N-1):
             self.con += [self.x[3:6, n+1] == self.x[3:6, n] + (self.dt * 0.5) * ((self.u[:, n] + self.var_g[:, 0]) + (self.u[:, n+1] + self.var_g[:, 0]))]
@@ -65,18 +64,18 @@ class RocketLanding:
             self.con += [cp.norm((self.x[0:3, n] - self.x[0:3, self.N-1])[1:3]) - self.y_gs_cot * (self.x[0, n] - self.x[0, self.N-1]) <= 0]  # glideslope cone
             self.con += [cp.norm(self.x[3:6, n]) <= self.V_max]  # velocity
             
-            self.con += [self.z[0, n+1] == self.z[0, n] - (self.alpha_dt * 0.5) * (self.s[0, n] + self.s[0, n+1])]  # mass decreases
-            self.con += [cp.norm(self.u[:, n]) <= self.s[0, n]]  # limit thrust
-            self.con += [self.u[0, n] >= self.p_cs_cos * self.s[0, n]]  # thrust pointing constraint
+            self.con += [self.z[n+1] == self.z[n] - (self.alpha_dt * 0.5) * (self.s[n] + self.s[n+1])]  # mass decreases
+            self.con += [cp.norm(self.u[:, n]) <= self.s[n]]  # limit thrust
+            self.con += [self.u[0, n] >= self.p_cs_cos * self.s[n]]  # thrust pointing constraint
 
             if n > 0:
-                self.con += [self.z0[0, n] == self.z0_term_log[0, n]]
-                self.con += [self.lambda_1[0, n] == self.z0_term_inv[0, n] * (1 - (self.z[0, n] - self.z0[0, n]))]
-                self.con += [self.lambda_2[0, n] == self.z0_term_inv[0, n] * (1 - (self.z[0, n] - self.z0[0, n]))]
+                self.con += [self.z0[n] == self.z0_term_log[n]]
+                self.con += [self.lambda_1[n] == self.z0_term_inv[n] * (1 - (self.z[n] - self.z0[n]))]
+                self.con += [self.lambda_2[n] == self.z0_term_inv[n] * (1 - (self.z[n] - self.z0[n]))]
 
                 # taylor series as a great approximation to keep the convexity
-                self.con += [self.s[0, n] >= self.r1 * self.lambda_1[0, n] + (self.z[0, n] - self.z0[0, n]) ** 2 * 0.5]  # thrust lower bound
-                self.con += [self.s[0, n] <= self.r2 * self.lambda_2[0, n]]  # thrust upper bound
+                self.con += [self.s[n] >= self.r1 * self.lambda_1[n] + (self.z[n] - self.z0[n]) ** 2 * 0.5]  # thrust lower bound
+                self.con += [self.s[n] <= self.r2 * self.lambda_2[n]]  # thrust upper bound
 
     def problem3(self):
         expression = cp.norm(self.x[0:3, self.N-1] - self.rf)  # minimize landing error
@@ -87,7 +86,7 @@ class RocketLanding:
     def problem4(self, min_distance):
         self.min_d.value = min_distance
         self.con += [cp.norm(self.x[0:3, self.N-1] - self.rf) <= self.min_d]
-        expression = self.z[0, self.N-1]  # minimize fuel consumption
+        expression = self.z[self.N-1]  # minimize fuel consumption
         objective = cp.Maximize(expression)
         problem = cp.Problem(objective, self.con)
         return problem

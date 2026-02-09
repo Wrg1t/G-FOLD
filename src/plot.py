@@ -8,10 +8,10 @@ def run(tf, x, u, m, s, z, v_data):
     t = np.linspace(0, tf, num=len(m.T))
     r = np.array(x[0:3, :])
     v = np.array(x[3:6, :])
-    z = np.array(z)[0]
-    s = np.array(s)[0]
+    z = np.array(z)
+    s = np.array(s)
     u = np.array(u)
-    m = np.array(m)[0]
+    m = np.array(m)
     g0 = 9.80665
     
     Th = [np.linalg.norm(u[:, i]) * m[i] for i in range(len(v.T))]
@@ -58,13 +58,13 @@ def run(tf, x, u, m, s, z, v_data):
                                  legendgroup='Thrust Vector',
                                  name='Thrust Vector'))
 
-    z0 = v_data['initial_state'][0, 0]
-    x0 = v_data['initial_state'][0, 1]
-    y0 = v_data['initial_state'][0, 2]
+    z0 = v_data['initial_state'][0]
+    x0 = v_data['initial_state'][1]
+    y0 = v_data['initial_state'][2]
 
-    zp = v_data['landing_point'][0, 0]
-    xp = v_data['landing_point'][0, 1]
-    yp = v_data['landing_point'][0, 2]
+    zp = v_data['landing_point'][0]
+    xp = v_data['landing_point'][1]
+    yp = v_data['landing_point'][2]
 
     traj.add_trace(go.Scatter3d(x=[x0], y=[y0], z=[z0],
                                   mode='markers', marker=dict(size=8, color='green'),
