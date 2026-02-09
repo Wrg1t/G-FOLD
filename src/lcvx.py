@@ -3,10 +3,9 @@ import numpy as np
 from cvxpygen import cpg
 from parameters import rocket_landing_parameters as p
 from src import lcvx_problem_definition as pdef
-from src import plot
 
 
-def golden_section_search(N, problem_builder, tf_tol=10, max_iters=100):
+def golden_section_search(N, problem_builder, solve_fn, tf_tol=10, max_iters=100):
     rkl = p.Parameters(N)
 
     phi = (np.sqrt(5) - 1) * 0.5  # golden ratio
@@ -19,16 +18,8 @@ def golden_section_search(N, problem_builder, tf_tol=10, max_iters=100):
     left_params = rkl.get_data(tf_left)
     right_params = rkl.get_data(tf_right)
     
-    def solve_lcvx(params):
-        problem = problem_builder(N, params)
-        problem.solve(solver='CLARABEL', verbose=False)
-        if problem.status == cp.OPTIMAL:
-            return problem.value
-        else:
-            return float('inf')
-
-    obj_left = solve_lcvx(left_params)
-    obj_right = solve_lcvx(right_params)
+    obj_left = solve_fn(left_params)
+    obj_right = solve_fn(right_params)
     
     iteration = 0 
     while (tf_max - tf_min) > tf_tol and iteration < max_iters:    
@@ -42,7 +33,7 @@ def golden_section_search(N, problem_builder, tf_tol=10, max_iters=100):
             
             tf_left = tf_max - phi * (tf_max - tf_min)
             left_params = rkl.get_data(tf_left)
-            obj_left = solve_lcvx(left_params)
+            obj_left = solve_fn(left_params)
 
         else:
             tf_min = tf_left
@@ -51,24 +42,32 @@ def golden_section_search(N, problem_builder, tf_tol=10, max_iters=100):
             
             tf_right = tf_min + phi * (tf_max - tf_min)
             right_params = rkl.get_data(tf_right)
-            obj_right = solve_lcvx(right_params)
+            obj_right = solve_fn(right_params)
 
         iteration += 1
     
     tf_opt = (tf_max + tf_min) / 2
     opt_params = rkl.get_data(tf_opt)
-    obj_opt = solve_lcvx(opt_params)
+    obj_opt = solve_fn(opt_params)
     
     return tf_opt, obj_opt
 
 
 def solve_p3(N, tf_tol=10):
-    def problem_builder(N, params):
+    def problem_builder(params):
         lcvx = pdef.RocketLanding(N, params)
         problem = lcvx.problem3()
         return problem
     
-    tf_opt, obj_opt = golden_section_search(N, problem_builder, tf_tol)
+    def solve_lcvx(params):
+        problem = problem_builder(params)
+        problem.solve(solver='CLARABEL', verbose=False)
+        if problem.status == cp.OPTIMAL:
+            return problem.value
+        else:
+            return float('inf')
+    
+    tf_opt, obj_opt = golden_section_search(N, problem_builder, solve_lcvx, tf_tol)
     return tf_opt, obj_opt
 
 
@@ -79,12 +78,73 @@ def solve_p4(N, min_d, tf_opt):
     problem = lcvx.problem4(min_d)
     problem.solve(solver='CLARABEL', verbose=False)
 
-    print(f"Time of flight: {tf_opt}s")
-    plot.run(tf_opt, lcvx.x.value, lcvx.u.value, np.exp(
-        lcvx.z.value), lcvx.s.value, lcvx.z.value, rkl.vessel_data)
+    return (tf_opt, lcvx, rkl.vessel_data)
 
 
-# codegen INOP, can't handle N dynamically!!!
+
+def solve_p3_cpg(N, tf_tol=10):
+    def problem_builder(params):
+        lcvx = pdef.RocketLanding(N, params)
+        problem = lcvx.problem3()
+        return problem
+    
+    def solve_lcvx(params):
+        problem = problem_builder(params)
+        
+        import importlib
+        module_name = f"lcvxP3_N{N}_cpg.cpg_solver"
+        
+        try:
+            lcvxP3_solver = importlib.import_module(module_name)
+            cpg_solve = lcvxP3_solver.cpg_solve
+        except ModuleNotFoundError:
+            raise ModuleNotFoundError(
+                f"Solver module '{module_name}' not found. "
+                f"Please generate the solver by running: generate_problem3_solver({N})"
+            )
+
+        problem.register_solve('CPG', cpg_solve)
+        problem.solve(method='CPG', verbose=False)
+        if not np.isnan(problem.value):
+            return problem.value
+        else:
+            return float('inf')
+        
+    import sys
+    # after solving, unload the module to avoid conflicts
+    if f"lcvxP3_N{N}_cpg" in sys.modules:
+        del sys.modules[f"lcvxP3_N{N}_cpg"]
+    if f"lcvxP3_N{N}_cpg.cpg_solver" in sys.modules:
+        del sys.modules[f"lcvxP3_N{N}_cpg.cpg_solver"]
+    
+    tf_opt, obj_opt = golden_section_search(N, problem_builder, solve_lcvx, tf_tol)
+    return tf_opt, obj_opt
+
+
+def solve_p4_cpg(N, min_d, tf_opt):
+    rkl = p.Parameters(N)
+    opt_params = rkl.get_data(tf_opt)    
+    lcvx = pdef.RocketLanding(N, opt_params)
+    problem = lcvx.problem4(min_d)
+    
+    import importlib
+    module_name = f"lcvxP4_N{N}_cpg.cpg_solver"
+    
+    try:
+        lcvxP4_solver = importlib.import_module(module_name)
+        cpg_solve = lcvxP4_solver.cpg_solve
+    except ModuleNotFoundError:
+        raise ModuleNotFoundError(
+            f"Solver module '{module_name}' not found. "
+            f"Please generate the solver by running: generate_problem4_solver({N})"
+        )
+
+    problem.register_solve('CPG', cpg_solve)
+    problem.solve(method='CPG', verbose=False)
+    
+    return (tf_opt, lcvx, rkl.vessel_data)
+    
+
 def generate_problem3_solver(N):    
     tf = 10
     rkl = p.Parameters(N)
@@ -92,14 +152,16 @@ def generate_problem3_solver(N):
     lcvx = pdef.RocketLanding(N, params)
     problem = lcvx.problem3()
 
-    cpg.generate_code(problem, code_dir=f'lcvxP3_N{N}_cpg', solver='CLARABEL')
+    cpg.generate_code(problem, code_dir=f'lcvxP3_N{N}_cpg', solver='CLARABEL', prefix='P3')
 
 
-def generate_problem4_solver():
-    DT = 1  # time interval
-    N = 80
-    rkl = p.Parameters(DT)
-    params = rkl.get_data()
+def generate_problem4_solver(N):
+    tf = 10
+    min_d = 0
+    rkl = p.Parameters(N)
+    params = rkl.get_data(tf)
+    
     lcvx = pdef.RocketLanding(N, params)
-    problem = lcvx.problem4(1)
-    cpg.generate_code(problem, code_dir='lcvxP4', solver='CLARABEL')
+    problem = lcvx.problem4(min_d)
+
+    cpg.generate_code(problem, code_dir=f'lcvxP4_N{N}_cpg', solver='CLARABEL', prefix='P4')
