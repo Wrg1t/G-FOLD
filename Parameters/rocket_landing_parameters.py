@@ -3,9 +3,11 @@ import json
 
 
 class Parameters:
-    def __init__(self, time_interval):
+    def __init__(self, N):
         with open("Parameters/vessel_parameters_mars.json", 'r') as file:
             self.vessel_data = json.load(file)
+            
+        self.N = N
 
         self.vessel_data['landing_point'] = np.array(self.vessel_data['landing_point'])
         self.vessel_data['initial_state'] = np.array(self.vessel_data['initial_state'])
@@ -38,23 +40,24 @@ class Parameters:
 
         self.time_upper_bound = self.mass_fuel / (self.alpha * self.thrust_lower_bound)
         self.time_lower_bound = self.mass_dry * np.linalg.norm(self.initial_state[3:]) / self.thrust_upper_bound
-        self.time_interval = time_interval
 
-    def get_data(self, N):
+    def get_data(self, tf):
+        dt = tf / self.N
+        
         final_position = self.landing_point
-        alpha_dt = self.alpha * self.time_interval
-        time_array = np.linspace(0, (N - 1) * self.time_interval, N)
+        alpha_dt = self.alpha * dt
+        time_array = np.linspace(0, (self.N - 1) * dt, self.N)
 
         z0_term = self.mass_wet - self.alpha * self.thrust_upper_bound * time_array
-        z0_term_inv = (1 / z0_term).reshape(1, N)
-        z0_term_log = np.log(z0_term).reshape(1, N)
-
+                        
+        z0_term_inv = (1 / z0_term)
+        z0_term_log = np.log(z0_term)
+    
         initial_state = self.initial_state.reshape(6, 1)
         gravity = self.gravity_vector.reshape(3, 1)
-        sparse_params = np.array((alpha_dt, self.max_velocity,
+        sparse_params = (alpha_dt, self.max_velocity,
                                   self.angle_gs_cot, self.angle_pt_cos,
                                   self.mass_wet_log, self.mass_dry_log, self.thrust_lower_bound,
-                                  self.thrust_upper_bound, self.time_interval))
-        sparse_params = sparse_params.reshape(len(sparse_params), 1)
-
+                                  self.thrust_upper_bound, dt)
+        
         return (initial_state, z0_term_inv, z0_term_log, gravity, final_position, sparse_params)
