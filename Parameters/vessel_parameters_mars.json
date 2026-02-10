@@ -7,7 +7,7 @@
     "initial_state": [1000, 360, -560, 10, -25, -10],
     "landing_point": [0, 0, 0],
     "angle_gs": 42,
-    "angle_pt": 45,
+    "angle_pt": 20,
     "g": [-3.71, 0, 0],
     "G_max": 3,
     "velocity_max": 100

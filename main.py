@@ -1,5 +1,5 @@
-from src import lcvx
-from src import plot
+from algorithms import lcvx
+import plot
 import numpy as np
 import time
 

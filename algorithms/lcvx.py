@@ -2,7 +2,7 @@ import cvxpy as cp
 import numpy as np
 from cvxpygen import cpg
 from parameters import rocket_landing_parameters as p
-from src import lcvx_problem_definition as pdef
+from algorithms import lcvx_problem_definition as pdef
 
 
 def golden_section_search(N, problem_builder, solve_fn, tf_tol=10, max_iters=100):
