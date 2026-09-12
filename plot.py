@@ -4,7 +4,7 @@ import numpy as np
 
 
 def run(tf, x, u, m, s, z, v_data):
-    t = np.linspace(0, tf, num=len(m.T))
+    t = np.linspace(0, tf, num=len(m))
     r = np.array(x[0:3, :])
     v = np.array(x[3:6, :])
     z = np.array(z)
@@ -119,7 +119,7 @@ def run(tf, x, u, m, s, z, v_data):
             z=[zf],
             mode="markers",
             marker=dict(size=8, color="#636EFA"),
-            name="Closet Landing Point",
+            name="Closest Landing Point",
         )
     )
 
@@ -289,7 +289,7 @@ def run(tf, x, u, m, s, z, v_data):
         row=2,
         col=2,
     )
-    fig.update_yaxes(range=[np.min(u_angle), None], row=2, col=2)
+    fig.update_yaxes(range=[0, None], row=2, col=2)
 
 
     alpha = 1 / (g0 * v_data["Isp"])

@@ -6,7 +6,7 @@ class RocketLanding:
     def __init__(self, N, packed_data):
         self.N = N
 
-        self.x0, self.z0_term_inv, self.z0_term_log, self.g, self.rf, self.sparse_params = packed_data
+        self.x0, self.z0_term_inv, self.z0_term_log, self.z1_term_log, self.g, self.rf, self.sparse_params = packed_data
         self.alpha_dt, self.V_max, self.y_gs_cot, self.p_cs_cos, self.m_wet_log, self.m_dry_log, self.r1, self.r2, self.dt = self.sparse_params
 
         self._initialize_paramterters()
@@ -17,6 +17,7 @@ class RocketLanding:
         self.x0 = cp.Parameter(np.shape(self.x0), 'x0', self.x0)
         self.z0_term_inv = cp.Parameter(np.shape(self.z0_term_inv), 'z0_term_inv', self.z0_term_inv)
         self.z0_term_log = cp.Parameter(np.shape(self.z0_term_log), 'z0_term_log', self.z0_term_log)
+        self.z1_term_log = cp.Parameter(np.shape(self.z1_term_log), 'z1_term_log', self.z1_term_log)
         self.g = cp.Parameter(np.shape(self.g), 'g', self.g)
         self.alpha_dt = cp.Parameter(np.shape(self.alpha_dt), 'alpha_dt', self.alpha_dt)
         self.V_max = cp.Parameter(np.shape(self.V_max), 'V_max', self.V_max)
@@ -67,15 +68,15 @@ class RocketLanding:
             self.con += [self.z[n+1] == self.z[n] - (self.alpha_dt * 0.5) * (self.s[n] + self.s[n+1])]  # mass decreases
             self.con += [cp.norm(self.u[:, n]) <= self.s[n]]  # limit thrust
             self.con += [self.u[0, n] >= self.p_cs_cos * self.s[n]]  # thrust pointing constraint
+            self.con += [self.z0_term_log[n] <= self.z[n], self.z[n] <= self.z1_term_log[n]]  # ensure the physical bounds on z are not violated
+            
+            self.con += [self.z0[n] == self.z0_term_log[n]]
+            self.con += [self.lambda_1[n] == self.z0_term_inv[n] * (1 - (self.z[n] - self.z0[n]))]
+            self.con += [self.lambda_2[n] == self.z0_term_inv[n] * (1 - (self.z[n] - self.z0[n]))]
 
-            if n > 0:
-                self.con += [self.z0[n] == self.z0_term_log[n]]
-                self.con += [self.lambda_1[n] == self.z0_term_inv[n] * (1 - (self.z[n] - self.z0[n]))]
-                self.con += [self.lambda_2[n] == self.z0_term_inv[n] * (1 - (self.z[n] - self.z0[n]))]
-
-                # taylor series as a great approximation to keep the convexity
-                self.con += [self.s[n] >= self.r1 * self.lambda_1[n] + (self.z[n] - self.z0[n]) ** 2 * 0.5]  # thrust lower bound
-                self.con += [self.s[n] <= self.r2 * self.lambda_2[n]]  # thrust upper bound
+            # taylor series as a great approximation to keep the convexity
+            self.con += [self.s[n] >= self.r1 * self.lambda_1[n] + (self.z[n] - self.z0[n]) ** 2 * 0.5]  # thrust lower bound
+            self.con += [self.s[n] <= self.r2 * self.lambda_2[n]]  # thrust upper bound
 
     def problem3(self):
         expression = cp.norm(self.x[0:3, self.N-1] - self.rf)  # minimize landing error

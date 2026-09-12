@@ -1,7 +1,9 @@
 .DS_Store
 NOTES.md
 .venv
-*_cpg
+*_cpg*
 __pycache__
 *.sublime*
+.vscode
+.pi-glla
 play_ground.ipynb
