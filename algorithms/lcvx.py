@@ -100,7 +100,7 @@ def solve_p3_cpg(params, tf_tol=10):
         except ModuleNotFoundError:
             raise ModuleNotFoundError(
                 f"Solver module '{module_name}' not found. "
-                f"Please generate the solver by running: generate_problem3_solver({N})"
+                f"Please generate the solver by running: python all_cpg.py {N}"
             )
 
         problem.register_solve('CPG', cpg_solve)
@@ -136,7 +136,7 @@ def solve_p4_cpg(params, min_d, tf_opt):
     except ModuleNotFoundError:
         raise ModuleNotFoundError(
             f"Solver module '{module_name}' not found. "
-            f"Please generate the solver by running: generate_problem4_solver({N})"
+            f"Please generate the solver by running: python all_cpg.py {N}"
         )
 
     problem.register_solve('CPG', cpg_solve)
