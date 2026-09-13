@@ -6,7 +6,7 @@ env
 .idea
 .vscode
 *.sublime*
-*_cpg*
+*_cpg
 __pycache__
 .pi-glla
 References
