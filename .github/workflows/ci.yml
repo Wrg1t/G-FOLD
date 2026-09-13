@@ -1,0 +1,28 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  path-guard:
+    name: Case-sensitive path guard
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Tracked paths must not rely on a case-insensitive filesystem
+        run: |
+          if git ls-files | grep -qE '(^|/)Parameters/'; then
+            echo "::error::Found 'Parameters/' in the index. The package must be lowercase 'parameters/'."
+            exit 1
+          fi
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Parameters package imports on a case-sensitive filesystem
+        run: |
+          python -m pip install --quiet 'numpy>=2'
+          python -c "from parameters import rocket_landing_parameters as p; p.Parameters(5); print('parameters import ok')"
