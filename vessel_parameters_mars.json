@@ -1,0 +1,14 @@
+{
+    "mass_dry": 2000.0,
+    "mass_fuel": 800.0,
+    "throttle": [0.2, 0.8],
+    "thrust_max": 24000,
+    "Isp": 203.94,
+    "initial_state": [1000, 360, -560, -10, -5, -5],
+    "landing_point": [0, 0, 0],
+    "angle_gs": 30,
+    "angle_pt": 45,
+    "g": [-3.71, 0, 0],
+    "G_max": 3,
+    "velocity_max": 100
+}

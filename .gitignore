@@ -1,9 +1,13 @@
 .DS_Store
 NOTES.md
 .venv
+venv
+env
+.idea
+.vscode
+*.sublime*
 *_cpg*
 __pycache__
-*.sublime*
-.vscode
 .pi-glla
+References
 play_ground.ipynb
